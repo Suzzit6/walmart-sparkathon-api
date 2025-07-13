@@ -9,6 +9,10 @@ import seaborn as sns
 from PIL import Image
 import sys
 from main import extract_metadata, generate_analysis_code, execute_analysis_code, extract_insights_from_analysis
+import os
+
+# Configuration
+DEFAULT_DATA_FILE = 'supplychain_data.csv'  # Default data file
 
 # Page configuration
 st.set_page_config(
@@ -56,6 +60,17 @@ if 'metadata' not in st.session_state:
     st.session_state.metadata = None
 if 'dataframe' not in st.session_state:
     st.session_state.dataframe = None
+    
+    # Try to load default data file if it exists
+    if os.path.exists(DEFAULT_DATA_FILE):
+        try:
+            df = pd.read_csv(DEFAULT_DATA_FILE)
+            st.session_state.dataframe = df
+            st.session_state.metadata = extract_metadata(df)
+            st.session_state.file_uploaded = True
+            print(f"Loaded default data file: {DEFAULT_DATA_FILE}")
+        except Exception as e:
+            print(f"Error loading default data: {e}")
 
 def load_and_process_file(uploaded_file):
     """Load the uploaded file and process its metadata"""

@@ -20,7 +20,8 @@ from flask import Flask, request, jsonify, send_file, render_template
 UPLOAD_FOLDER = 'uploads'
 METADATA_FOLDER = 'metadata'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
-google_api_key = "AIzaSyBDTEAS9c97DqFjPS9IaUH3u8WPAG4W3kY"  # Make sure to set this environment variable
+DEFAULT_DATA_FILE = 'supplychain_data.csv'  # Default data file
+google_api_key = os.getenv("GOOGLE_API_KEY")  # API key from environment variable   
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(METADATA_FOLDER, exist_ok=True)
@@ -95,16 +96,24 @@ def get_latest_metadata():
     return LATEST_METADATA
 
 def load_dataframe():
-    """Load the most recent dataframe for code execution"""
+    """Load the most recent dataframe for code execution or default if none exists"""
     global LATEST_FILE_PATH
     
     if not LATEST_FILE_PATH:
+        # Check for uploaded files
         upload_files = [f for f in os.listdir(UPLOAD_FOLDER) if allowed_file(f)]
-        if not upload_files:
-            return None
         
-        latest_file = max(upload_files, key=lambda f: os.path.getctime(os.path.join(UPLOAD_FOLDER, f)))
-        LATEST_FILE_PATH = os.path.join(UPLOAD_FOLDER, latest_file)
+        if not upload_files:
+            # No uploads found, use default data file
+            if os.path.exists(DEFAULT_DATA_FILE):
+                LATEST_FILE_PATH = DEFAULT_DATA_FILE
+                print(f"Using default data file: {DEFAULT_DATA_FILE}")
+            else:
+                return None
+        else:
+            # Use most recent upload
+            latest_file = max(upload_files, key=lambda f: os.path.getctime(os.path.join(UPLOAD_FOLDER, f)))
+            LATEST_FILE_PATH = os.path.join(UPLOAD_FOLDER, latest_file)
     
     if LATEST_FILE_PATH.endswith('.csv'):
         return pd.read_csv(LATEST_FILE_PATH)
@@ -292,8 +301,14 @@ def ask_query(query):
     try:
         # Load metadata for context
         metadata = get_latest_metadata()
+        
+        # If no metadata exists, try to load the default file
         if not metadata:
-            return {"error": "No data available. Please upload a file first."}
+            df = load_dataframe()
+            if df is not None:
+                metadata = save_metadata(df)
+            else:
+                return {"error": "No data available. Please upload a file or place a default file named 'supplychain_data.csv' in the root directory."}
         
         # Generate and execute code for analysis/visualization
         code = generate_analysis_code(query, metadata)
