@@ -20,7 +20,7 @@ from flask import Flask, request, jsonify, send_file, render_template
 UPLOAD_FOLDER = 'uploads'
 METADATA_FOLDER = 'metadata'
 ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'xls'}
-google_api_key = os.environ.get('GOOGLE_API_KEY')  # Make sure to set this environment variable
+google_api_key = "AIzaSyBDTEAS9c97DqFjPS9IaUH3u8WPAG4W3kY"  # Make sure to set this environment variable
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(METADATA_FOLDER, exist_ok=True)
